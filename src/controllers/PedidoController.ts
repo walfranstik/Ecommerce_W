@@ -377,13 +377,11 @@ class PedidoController {
           // Actualizar Dirección de Envío
           if (data.direccionEnvioId !== undefined) {
             // Si se envió explícitamente
-            if (data.direccionEnvioId === null) {
-              // Si se quiere quitar la dirección
-              pedidoExistente.direccionEnvio = undefined; // O null, según tu entidad
-            } else {
+            if (data.direccionEnvioId !== null) {
+             
               const nuevaDireccion = await addressRepo.findOneBy({
                 id: data.direccionEnvioId,
-                usuario: { id: pedidoExistente.usuario.id }, // Validar que pertenece al usuario del pedido
+                user: { id: pedidoExistente.usuario.id }, // Validar que pertenece al usuario del pedido
               });
               if (!nuevaDireccion) {
                 throw {
