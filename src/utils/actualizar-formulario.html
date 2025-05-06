@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Producto</title>
+    <style>
+        body { font-family: sans-serif; }
+        form { display: flex; flex-direction: column; max-width: 500px; margin: 20px auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        label { margin-bottom: 5px; }
+        input[type="text"], input[type="number"], input[type="checkbox"], select, textarea { margin-bottom: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 3px; }
+        input[type="file"] { margin-bottom: 10px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .imagenes-existentes { margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
+        .imagen-existente { display: flex; align-items: center; margin-bottom: 5px; }
+        .imagen-existente label { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Editar Producto</h1>
+    <form id="actualizarProductoForm" enctype="multipart/form-data">
+        <div>
+            <label for="id">ID del Producto a Actualizar:</label>
+            <input type="number" id="id" name="id" required readonly>
+        </div>
+        <div>
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" name="nombre">
+        </div>
+        <div>
+            <label for="descripcion">Descripción:</label>
+            <textarea id="descripcion" name="descripcion"></textarea>
+        </div>
+        <div>
+            <label for="precio">Precio:</label>
+            <input type="number" id="precio" name="precio" step="0.01">
+        </div>
+        <div>
+            <label for="categoriaId">ID de Categoría:</label>
+            <input type="number" id="categoriaId" name="categoriaId">
+        </div>
+        <div>
+            <label for="stock">Stock:</label>
+            <input type="number" id="stock" name="stock">
+        </div>
+        <div>
+            <label for="sku">SKU:</label>
+            <input type="text" id="sku" name="sku">
+        </div>
+        <div>
+            <label for="activo">Activo:</label>
+            <input type="checkbox" id="activo" name="activo">
+        </div>
+        <div>
+            <label for="calificacionPromedio">Calificación Promedio:</label>
+            <input type="number" id="calificacionPromedio" name="calificacionPromedio" min="0" max="5" step="0.1">
+        </div>
+        <div>
+            <label for="numeroResenas">Número de Reseñas:</label>
+            <input type="number" id="numeroResenas" name="numeroResenas" min="0" step="0.1">
+        </div>
+        <div>
+            <label for="marca">Marca:</label>
+            <input type="text" id="marca" name="marca">
+        </div>
+        <div>
+            <label for="modelo">Modelo:</label>
+            <input type="text" id="modelo" name="modelo">
+        </div>
+        <div>
+            <label for="nuevasImagenes">Nuevas Imágenes:</label>
+            <input type="file" id="nuevasImagenes" name="nuevasImagenes" multiple>
+        </div>
+
+        <div class="imagenes-existentes" id="imagenesExistentes">
+            <h2>Imágenes Existentes (Seleccionar para eliminar):</h2>
+        </div>
+
+        <button type="submit">Actualizar Producto</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('actualizarProductoForm');
+            const imagenesExistentesDiv = document.getElementById('imagenesExistentes');
+            const productIdInput = form.querySelector('#id');
+
+            // Función para cargar los datos del producto en el formulario
+            async function cargarDatosProducto(productoId) {
+                try {
+
+                    const response = await fetch(`http://localhost:6505/product/${productoId}`, {
+                        method: 'GET',
+                    });
+                    const producto = await response.json();
+
+                    if (response.ok) {
+                        form.querySelector('#nombre').value = producto.nombre || '';
+                        form.querySelector('#descripcion').value = producto.descripcion || '';
+                        form.querySelector('#precio').value = producto.precio || '';
+                        form.querySelector('#categoriaId').value = producto.categoriaId || '';
+                        form.querySelector('#stock').value = producto.stock || '';
+                        form.querySelector('#sku').value = producto.sku || '';
+                        form.querySelector('#activo').checked = producto.activo || false;
+                        form.querySelector('#calificacionPromedio').value = producto.calificacionPromedio || '';
+                        form.querySelector('#numeroResenas').value = producto.numeroResenas || '';
+                        form.querySelector('#marca').value = producto.marca || '';
+                        form.querySelector('#modelo').value = producto.modelo || '';
+
+                        // Cargar las imágenes existentes
+                        imagenesExistentesDiv.innerHTML = '<h2>Imágenes Existentes (Seleccionar para eliminar):</h2>';
+                        if (producto.imagenes && producto.imagenes.length > 0) {
+                            producto.imagenes.forEach(imagen => {
+                                const div = document.createElement('div');
+                                div.classList.add('imagen-existente');
+                                const label = document.createElement('label');
+                                label.textContent = `ID: ${imagen.id}`;
+                                const checkbox = document.createElement('input');
+                                checkbox.type = 'checkbox';
+                                checkbox.name = 'imagenesAEliminar';
+                                checkbox.value = imagen.id;
+                                const img = document.createElement('img');
+                                img.src = "http://localhost:6505/public" + imagen.url;
+                                img.style.width = '200px';
+                                img.style.height = 'auto';
+                                img.style.marginLeft = '10px';
+
+                                div.appendChild(label);
+                                div.appendChild(checkbox);
+                                div.appendChild(img);
+                                imagenesExistentesDiv.appendChild(div);
+                            });
+                        } else {
+                            const p = document.createElement('p');
+                            p.textContent = 'No hay imágenes asociadas a este producto.';
+                            imagenesExistentesDiv.appendChild(p);
+                        }
+                    } else {
+                        alert('Error al cargar los datos del producto: ' + JSON.stringify(await response.json()));
+                        console.error('Error al cargar los datos del producto:', await response.json());
+                    }
+                } catch (error) {
+                    alert('Error de red al cargar los datos del producto: ' + error);
+                    console.error('Error de red al cargar los datos del producto:', error);
+                }
+            }
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const productId = productIdInput.value;
+                const formData = new FormData();
+                const imagenesAEliminar = [];
+                const checkboxesEliminar = imagenesExistentesDiv.querySelectorAll('input[type="checkbox"]:checked');
+                
+                checkboxesEliminar.forEach(checkbox => {
+                    imagenesAEliminar.push(checkbox.value);
+                });
+                formData.append('imagenesAEliminar', JSON.stringify(imagenesAEliminar)); // Agrega los IDs a eliminar
+
+                // Append other fields if they have a value
+                const nombre = form.querySelector('#nombre').value;
+                if (nombre) formData.append('nombre', nombre);
+                const descripcion = form.querySelector('#descripcion').value;
+                if (descripcion) formData.append('descripcion', descripcion);
+                const precio = form.querySelector('#precio').value;
+                if (precio) formData.append('precio', precio);
+                const categoriaId = form.querySelector('#categoriaId').value;
+                if (categoriaId) formData.append('categoriaId', categoriaId);
+                const stock = form.querySelector('#stock').value;
+                if (stock) formData.append('stock', stock);
+                const sku = form.querySelector('#sku').value;
+                if (sku) formData.append('sku', sku);
+                const activo = form.querySelector('#activo').checked;
+                formData.append('activo', activo);
+                const calificacionPromedio = form.querySelector('#calificacionPromedio').value;
+                if (calificacionPromedio) formData.append('calificacionPromedio', calificacionPromedio);
+                const numeroResenas = form.querySelector('#numeroResenas').value;
+                if (numeroResenas) formData.append('numeroResenas', numeroResenas);
+                const marca = form.querySelector('#marca').value;
+                if (marca) formData.append('marca', marca);
+                const modelo = form.querySelector('#modelo').value;
+                if (modelo) formData.append('modelo', modelo);
+
+                const nuevasImagenesInput = form.querySelector('#nuevasImagenes');
+                if (nuevasImagenesInput.files.length > 0) {
+                    for (let i = 0; i < nuevasImagenesInput.files.length; i++) {
+                        formData.append('nuevasImagenes', nuevasImagenesInput.files[i]);
+                    }
+                }
+
+                try {
+                    console.log("**************");
+                    console.log(formData);
+                    const response = await fetch(`/product/${productId}`, {
+                        method: 'PUT',
+                        body: formData,
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert('Producto actualizado exitosamente!');
+                        console.log('Producto actualizado:', result);
+                        // Opcional: Recargar la página o actualizar la lista de productos
+                    } else {
+                        alert('Error al actualizar el producto: ' + JSON.stringify(result));
+                        console.error('Error al actualizar el producto:', result);
+                    }
+                } catch (error) {
+                    alert('Error de red: ' + error);
+                    console.error('Error de red:', error);
+                }
+            });
+
+            // Obtener el ID del producto de alguna manera (ejemplo: de la URL)
+            const urlParams = new URLSearchParams(window.location.search);
+            const productoIdParaEditar = urlParams.get('id'); // Ejemplo: /editar-producto.html?id=16
+            if (productoIdParaEditar) {
+                productIdInput.value = productoIdParaEditar;
+                cargarDatosProducto(productoIdParaEditar);
+            } else {
+                alert('Por favor, proporciona el ID del producto en la URL (ej. ?id=123).');
+            }
+        });
+    </script>
+</body>
+</html>
